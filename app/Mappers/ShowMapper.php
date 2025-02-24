@@ -23,7 +23,7 @@ class ShowMapper
             'weight' => $apiData['weight'] ?? null,
             'network' => $apiData['network']['name'] ?? null,
             'network_country' => $apiData['network']['country']['code'] ?? null,
-            'web_channel' => $apiData['webChannel'] ?? null,
+            'web_channel' => $apiData['webChannel']['name'] ?? null,
             'externals_imdb' => $apiData['externals']['imdb'] ?? null,
             'externals_thetvdb' => $apiData['externals']['thetvdb'] ?? null,
             'externals_tvrage' => $apiData['externals']['tvrage'] ?? null,

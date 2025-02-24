@@ -12,7 +12,6 @@ use App\Models\Person;
 use App\Models\Show;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use JetBrains\PhpStorm\NoReturn;
 
 class FetchShows extends Command
@@ -39,22 +38,26 @@ class FetchShows extends Command
     {
         $page = $this->option('page') ? (int) $this->option('page') : 0;
         $shows = $tvMaze->getShows(page: $page);
-        $showsWithErrors = [];
 
         while (count($shows) > 0) {
             $page++;
 
             foreach ($shows as $show) {
                 try {
+                    $existingShow = Show::query()->where('on_source_id', $show['id'])->first();
+
+                    if ($existingShow) {
+                        continue;
+                    }
+
                     $createdShow = $this->processShow(showApiData: $show);
                     $this->processShowGenre(genresApiData: $show['genres'], show: $createdShow);
                     $this->processShowCrew(crewApiData: $tvMaze->getShowCrew(showId: $show['id']), show: $createdShow);
                     $this->processShowCast(castApiData: $tvMaze->getShowCast(showId: $show['id']), show: $createdShow);
+
                 } catch (Exception $e) {
                     $this->info('Error processing show: ' . $show['id']);
                     // $this->error($e->getMessage());
-
-                    $showsWithErrors[] = $show['id'];
 
                     continue;
                 }
@@ -63,21 +66,11 @@ class FetchShows extends Command
             $shows = $tvMaze->getShows(page: $page);
         }
 
-        if (count($showsWithErrors) > 0) {
-            Storage::put('showsWithErrors.txt', implode("\n", $showsWithErrors));
-        }
-
         $this->info('All shows fetched');
     }
 
     private function processShow(array $showApiData): Show
     {
-        $show = Show::query()->where('on_source_id', $showApiData['id'])->first();
-
-        if ($show) {
-            return $show;
-        }
-
         return CreateShowAction::handle(data: ShowMapper::handle(apiData: $showApiData));
     }
 
